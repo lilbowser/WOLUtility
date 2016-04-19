@@ -9,7 +9,6 @@ import sys
 import struct
 import logging
 
-
 log = logging.getLogger("WOL")
 def wake_on_lan(macaddress):
     """
@@ -85,21 +84,41 @@ def check_host_status(hostname):
 
 if __name__ == '__main__':
     import time
+    import argparse
+
+    # Set up argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--mac', help='Send magic packet to mac address.')
+    parser.add_argument('--host', help='Send magic packet to hostname or IP address (Host must be in config file).')
+    args = parser.parse_args()
+
+
+    # Load Configureation data
     config = load_config()
-    testDict = {'a': 'one', 'b': 'two'}
-    print("Please enter one of the following hostnames to send a magic packet")
-    for hostname, mac_address in config['hostnames'].items():
-        print(hostname)
-    # selected_hostname = input("")
-    selected_hostname = "rainbowdash"
-    try:
-        selected_mac = config['hostnames'][selected_hostname]
-    except KeyError as e:
-        print("Invalid hostname")
-        input("Press enter to exit")
-        sys.exit(1)
+    selected_mac = None
+    if args.mac is not None:
+        selected_mac = args.mac
+        selected_hostname = args.mac
+    else:
+        if args.host is not None:
+            selected_hostname = args.host
+        else:
+            print("Please enter one of the following hostnames to send a magic packet")
+            for hostname, mac_address in config['hostnames'].items():
+                print(hostname)
+            selected_hostname = input("")
+            # selected_hostname = "rainbowdash"
+        try:
+            selected_mac = config['hostnames'][selected_hostname]
+        except KeyError as e:
+            print("Invalid hostname")
+            input("Press enter to exit")
+            sys.exit(1)
+
     wake_on_lan(selected_mac)
-    print("Magic packet has been sent to {}. Please wait at least 60 seconds for machine to respond.".format(selected_hostname))
+    print("Magic packet has been sent to {}. Please wait for machine to respond.".format(selected_hostname))
+    input("Press enter to exit")
+    sys.exit(0)
 
     # start_time = time.time()
     # while True:
