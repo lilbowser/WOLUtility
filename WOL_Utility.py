@@ -60,27 +60,30 @@ def load_config(URI="config.yaml"):
     return _config
 
 def check_host_status(hostname):
-    import os
-    import platform
+    """
+    On a successful reply, we will see:
+    Packets: Sent = 1, Received = 1, Lost = 0 (0% loss),
+    Check for that, instead of return code.
+    :param hostname:
+    :return:
+    """
 
-    giveFeedback = False
+    import subprocess as sp
+    import sys
 
-    if platform.system() == "Windows":
-        response = os.system("ping " + hostname + " -n 1")
+    try:
+        output = sp.check_output(["ping", hostname, '-n', '1'])
+
+    except sp.CalledProcessError as e:
+        output = None
+        return False
+
+    str_out = output.decode(sys.stdout.encoding)
+    if "Packets: Sent = 1, Received = 1, Lost = 0 (0% loss)," in str_out and \
+            "Approximate round trip times in milli-seconds:" in str_out:
+        return True
     else:
-        response = os.system("ping -c 1 " + hostname)
-
-    isUpBool = False
-    if response == 0:
-        if giveFeedback:
-            print(hostname + 'is up!')
-        isUpBool = True
-    else:
-        if giveFeedback:
-            print(hostname + 'is down!')
-
-    return isUpBool
-
+        return False
 
 if __name__ == '__main__':
     import time
@@ -117,20 +120,20 @@ if __name__ == '__main__':
 
     wake_on_lan(selected_mac)
     print("Magic packet has been sent to {}. Please wait for machine to respond.".format(selected_hostname))
-    input("Press enter to exit")
-    sys.exit(0)
+    # input("Press enter to exit")
+    # sys.exit(0)
 
-    # start_time = time.time()
-    # while True:
-    #     time.sleep(5)
-    #     elapsed_time = time.time() - start_time
-    #     if check_host_status(selected_hostname):
-    #         print("Host is now up after {:5f} seconds!".format(elapsed_time))
-    #         time.sleep(10)
-    #         sys.exit(0)
-    #     else:
-    #         print("{:5f} seconds have elapsed sense sending the magic packet".format(elapsed_time))
-    #         if elapsed_time > 120:
-    #             print("Magic Packet has timed out.")
-    #             time.sleep(10)
-    #             sys.exit(1)
+    start_time = time.time()
+    while True:
+        time.sleep(5)
+        elapsed_time = time.time() - start_time
+        if check_host_status(selected_hostname):
+            print("Host is now up after {:.0f} seconds!".format(elapsed_time))
+            time.sleep(10)
+            sys.exit(0)
+        else:
+            print("{:.0f} seconds have elapsed sense sending the magic packet".format(elapsed_time))
+            if elapsed_time > 120:
+                print("Magic Packet has timed out after 120 seconds.")
+                time.sleep(10)
+                sys.exit(1)
